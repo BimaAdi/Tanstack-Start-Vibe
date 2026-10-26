@@ -6,6 +6,7 @@ export const todos = sqliteTable("todos", {
 		autoIncrement: true,
 	}),
 	title: text().notNull(),
+	completed: integer({ mode: "boolean" }).notNull().default(false),
 	createdAt: integer("created_at", { mode: "timestamp" }).default(
 		sql`(unixepoch())`,
 	),

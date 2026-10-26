@@ -21,15 +21,6 @@ pnpm build
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
-
 ## Linting & Formatting
 
 This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
@@ -41,6 +32,27 @@ pnpm format
 pnpm check
 ```
 
+## Project Structure
+- src
+  - client/ (all code run on client)
+    - component/ (react component)
+      - routes/ (react component that only be used by specific route, here are example)
+        - index/ (route /)
+          - Page.tsx (Page component for /)
+        - todo/ (router /todo)
+          - Page.tsx (Page component for /todo)
+          - {other component}.tsx (other component that only used by todo/Page.tsx)
+        - todo.create/ (router /todo/create)
+          - Page.tsx
+        - todo.$id/ (router /todo/{id} dynamic)
+          - Page.tsx
+      - shared/ (component that used by multiple routes)
+  - server (all code run on server)
+    - serverFn/ (tanstack start server function)
+    - service/ (function run on server)
+    - schema/ (zod schema to validate input and output of server function)
+    - db/ (drizzle schema)
+  - route (tanstack router route)
 
 ## Deploy with Nitro
 
