@@ -11,3 +11,10 @@ export const todos = sqliteTable("todos", {
 		sql`(unixepoch())`,
 	),
 });
+
+export const counter = sqliteTable("counter", {
+	id: integer({ mode: "number" }).primaryKey({
+		autoIncrement: true,
+	}),
+	count: integer({ mode: "number" }).notNull().default(0),
+});

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { useRouter } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	cleanup,
 	fireEvent,
@@ -7,7 +7,7 @@ import {
 	screen,
 	waitFor,
 } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Todo } from "#/server/schema/todo";
 import {
 	createTodo,
@@ -16,18 +16,12 @@ import {
 } from "#/server/serverFn/todo";
 import { Page } from "./Page";
 
-vi.mock("@tanstack/react-router", async (importOriginal) => {
-	const actual =
-		await importOriginal<typeof import("@tanstack/react-router")>();
-	return {
-		...actual,
-		useRouter: vi.fn(),
-	};
-});
+const todosQueryKey = ["todos"] as const;
 
 vi.mock("#/server/serverFn/todo", () => ({
 	createTodo: vi.fn(),
 	deleteTodo: vi.fn(),
+	getTodos: vi.fn(),
 	setTodoCompleted: vi.fn(),
 }));
 
@@ -46,36 +40,47 @@ const todos: Todo[] = [
 	},
 ];
 
-describe("Page", () => {
-	const invalidate = vi.fn(async () => {});
-
-	beforeEach(() => {
-		vi.mocked(useRouter).mockReturnValue({
-			invalidate,
-		} as unknown as ReturnType<typeof useRouter>);
+function renderPage(initialTodos: Todo[]) {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { staleTime: Number.POSITIVE_INFINITY, retry: false },
+			mutations: { retry: false },
+		},
 	});
 
+	queryClient.setQueryData(todosQueryKey, initialTodos);
+
+	render(
+		<QueryClientProvider client={queryClient}>
+			<Page />
+		</QueryClientProvider>,
+	);
+
+	return queryClient;
+}
+
+describe("Page", () => {
 	afterEach(() => {
 		cleanup();
 		vi.clearAllMocks();
 	});
 
 	it("renders the heading and empty state", () => {
-		render(<Page todos={[]} />);
+		renderPage([]);
 
 		expect(screen.getByRole("heading", { name: "Todo List" })).toBeTruthy();
 		expect(screen.getByText("No todos yet.")).toBeTruthy();
 	});
 
 	it("renders the provided todos", () => {
-		render(<Page todos={todos} />);
+		renderPage(todos);
 
 		expect(screen.getByText("Write tests")).toBeTruthy();
 		expect(screen.getByText("Ship feature")).toBeTruthy();
 		expect(screen.queryByText("No todos yet.")).toBeNull();
 	});
 
-	it("creates a todo and clears the input", async () => {
+	it("creates a todo, updates the cache, and clears the input", async () => {
 		const created: Todo = {
 			id: 3,
 			title: "New todo",
@@ -83,8 +88,7 @@ describe("Page", () => {
 			createdAt: null,
 		};
 		vi.mocked(createTodo).mockResolvedValue(created);
-
-		render(<Page todos={[]} />);
+		const queryClient = renderPage([]);
 
 		const input = screen.getByPlaceholderText("What needs to be done?");
 		fireEvent.change(input, { target: { value: "New todo" } });
@@ -95,25 +99,25 @@ describe("Page", () => {
 				data: { title: "New todo" },
 			}),
 		);
-		await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+		await waitFor(() =>
+			expect(queryClient.getQueryData(todosQueryKey)).toEqual([created]),
+		);
 		expect((input as HTMLInputElement).value).toBe("");
 	});
 
 	it("does not create a todo with a blank title", async () => {
-		render(<Page todos={[]} />);
+		renderPage([]);
 
 		const input = screen.getByPlaceholderText("What needs to be done?");
 		fireEvent.change(input, { target: { value: "   " } });
 		fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
 		await waitFor(() => expect(createTodo).not.toHaveBeenCalled());
-		expect(invalidate).not.toHaveBeenCalled();
 	});
 
-	it("toggles a todo and invalidates the router", async () => {
+	it("toggles a todo and updates the cache", async () => {
 		vi.mocked(setTodoCompleted).mockResolvedValue(undefined);
-
-		render(<Page todos={todos} />);
+		const queryClient = renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("checkbox")[0]);
 
@@ -122,41 +126,40 @@ describe("Page", () => {
 				data: { id: 1, completed: true },
 			}),
 		);
-		await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+		expect(queryClient.getQueryData<Todo[]>(todosQueryKey)?.[0].completed).toBe(
+			true,
+		);
 	});
 
-	it("deletes a todo and invalidates the router", async () => {
+	it("deletes a todo and updates the cache", async () => {
 		vi.mocked(deleteTodo).mockResolvedValue(undefined);
-
-		render(<Page todos={todos} />);
+		const queryClient = renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]);
 
 		await waitFor(() =>
 			expect(deleteTodo).toHaveBeenCalledWith({ data: { id: 1 } }),
 		);
-		await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(1));
+		expect(queryClient.getQueryData<Todo[]>(todosQueryKey)).toEqual([todos[1]]);
 	});
 
 	it("shows the error message when an action fails", async () => {
 		vi.mocked(deleteTodo).mockRejectedValue(new Error("Failed to delete"));
 
-		render(<Page todos={todos} />);
+		renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]);
 
 		expect(await screen.findByText("Failed to delete")).toBeTruthy();
-		expect(invalidate).not.toHaveBeenCalled();
 	});
 
 	it("shows a fallback message for non-Error failures", async () => {
 		vi.mocked(deleteTodo).mockRejectedValue("nope");
 
-		render(<Page todos={todos} />);
+		renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]);
 
 		expect(await screen.findByText("Something went wrong")).toBeTruthy();
-		expect(invalidate).not.toHaveBeenCalled();
 	});
 });

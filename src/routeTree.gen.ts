@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CounterRouteImport } from './routes/counter'
 import { Route as TodoRouteImport } from './routes/todo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CounterRoute = CounterRouteImport.update({
+  id: '/counter',
+  path: '/counter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TodoRoute = TodoRouteImport.update({
@@ -25,27 +31,31 @@ const TodoRoute = TodoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/counter': typeof CounterRoute
   '/todo': typeof TodoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/counter': typeof CounterRoute
   '/todo': typeof TodoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/counter': typeof CounterRoute
   '/todo': typeof TodoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/todo'
+  fullPaths: '/' | '/counter' | '/todo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/todo'
-  id: '__root__' | '/' | '/todo'
+  to: '/' | '/counter' | '/todo'
+  id: '__root__' | '/' | '/counter' | '/todo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CounterRoute: typeof CounterRoute
   TodoRoute: typeof TodoRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/counter': {
+      id: '/counter'
+      path: '/counter'
+      fullPath: '/counter'
+      preLoaderRoute: typeof CounterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/todo': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CounterRoute: CounterRoute,
   TodoRoute: TodoRoute,
 }
 export const routeTree = rootRouteImport

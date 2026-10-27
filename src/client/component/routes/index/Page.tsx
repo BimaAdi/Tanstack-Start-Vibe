@@ -7,12 +7,20 @@ export function Page() {
 			<p className="mt-2 text-gray-600">
 				A small Todo app built with TanStack Start.
 			</p>
-			<Link
-				to="/todo"
-				className="mt-6 inline-block rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-			>
-				Go to Todo List
-			</Link>
+			<div className="mt-6 flex gap-2">
+				<Link
+					to="/todo"
+					className="inline-block rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+				>
+					Go to Todo List
+				</Link>
+				<Link
+					to="/counter"
+					className="inline-block rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+				>
+					Go to Counter
+				</Link>
+			</div>
 		</main>
 	);
 }

@@ -1,35 +1,79 @@
-import { useRouter } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type SubmitEvent, useState } from "react";
 import type { Todo } from "#/server/schema/todo";
 import {
 	createTodo,
 	deleteTodo,
+	getTodos,
 	setTodoCompleted,
 } from "#/server/serverFn/todo";
 import { TodoItem } from "./TodoItem";
 
-export function Page({ todos }: { todos: Todo[] }) {
-	const router = useRouter();
-	const [title, setTitle] = useState("");
-	const [error, setError] = useState<string | null>(null);
+const todosQueryKey = ["todos"] as const;
 
-	async function run(action: () => Promise<unknown>) {
-		try {
-			await action();
-			setError(null);
-			await router.invalidate();
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Something went wrong");
-		}
+function errorMessage(error: unknown) {
+	return error instanceof Error ? error.message : "Something went wrong";
+}
+
+export function Page() {
+	const queryClient = useQueryClient();
+	const { data: todos = [] } = useQuery({
+		queryKey: todosQueryKey,
+		queryFn: () => getTodos(),
+	});
+	const [title, setTitle] = useState("");
+
+	const create = useMutation({
+		mutationFn: (newTitle: string) => createTodo({ data: { title: newTitle } }),
+		onSuccess: (todo) => {
+			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) => [
+				...current,
+				todo,
+			]);
+		},
+	});
+
+	const setCompleted = useMutation({
+		mutationFn: (variables: { id: number; completed: boolean }) =>
+			setTodoCompleted({ data: variables }),
+		onSuccess: (_data, variables) => {
+			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) =>
+				current.map((todo) =>
+					todo.id === variables.id
+						? { ...todo, completed: variables.completed }
+						: todo,
+				),
+			);
+		},
+	});
+
+	const remove = useMutation({
+		mutationFn: (id: number) => deleteTodo({ data: { id } }),
+		onSuccess: (_data, id) => {
+			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) =>
+				current.filter((todo) => todo.id !== id),
+			);
+		},
+	});
+
+	const error = create.error ?? setCompleted.error ?? remove.error;
+
+	function resetErrors() {
+		create.reset();
+		setCompleted.reset();
+		remove.reset();
 	}
 
-	async function handleAdd(event: SubmitEvent<HTMLFormElement>) {
+	function handleAdd(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!title.trim()) {
+		const newTitle = title.trim();
+		if (!newTitle) {
 			return;
 		}
-		await run(() => createTodo({ data: { title } }));
-		setTitle("");
+		resetErrors();
+		create.mutate(newTitle, {
+			onSuccess: () => setTitle(""),
+		});
 	}
 
 	return (
@@ -53,7 +97,7 @@ export function Page({ todos }: { todos: Todo[] }) {
 				</button>
 			</form>
 
-			{error && <p className="mt-3 text-red-600">{error}</p>}
+			{error && <p className="mt-3 text-red-600">{errorMessage(error)}</p>}
 
 			{todos.length === 0 ? (
 				<p className="mt-6 text-gray-500">No todos yet.</p>
@@ -63,12 +107,14 @@ export function Page({ todos }: { todos: Todo[] }) {
 						<TodoItem
 							key={todo.id}
 							todo={todo}
-							onToggle={(completed) =>
-								run(() =>
-									setTodoCompleted({ data: { id: todo.id, completed } }),
-								)
-							}
-							onDelete={() => run(() => deleteTodo({ data: { id: todo.id } }))}
+							onToggle={(completed) => {
+								resetErrors();
+								setCompleted.mutate({ id: todo.id, completed });
+							}}
+							onDelete={() => {
+								resetErrors();
+								remove.mutate(todo.id);
+							}}
 						/>
 					))}
 				</ul>
