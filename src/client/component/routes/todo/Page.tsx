@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { type SubmitEvent, useState } from "react";
 import type { Todo } from "#/server/schema/todo";
 import {
@@ -15,44 +15,33 @@ function errorMessage(error: unknown) {
 	return error instanceof Error ? error.message : "Something went wrong";
 }
 
-export function Page() {
-	const queryClient = useQueryClient();
-	const { data: todos = [] } = useQuery({
+export function Page({ initialTodos }: { initialTodos: Todo[] }) {
+	const { data: todos = [], refetch } = useQuery({
 		queryKey: todosQueryKey,
 		queryFn: () => getTodos(),
+		initialData: initialTodos,
 	});
 	const [title, setTitle] = useState("");
 
 	const create = useMutation({
 		mutationFn: (newTitle: string) => createTodo({ data: { title: newTitle } }),
-		onSuccess: (todo) => {
-			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) => [
-				...current,
-				todo,
-			]);
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
 	const setCompleted = useMutation({
 		mutationFn: (variables: { id: number; completed: boolean }) =>
 			setTodoCompleted({ data: variables }),
-		onSuccess: (_data, variables) => {
-			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) =>
-				current.map((todo) =>
-					todo.id === variables.id
-						? { ...todo, completed: variables.completed }
-						: todo,
-				),
-			);
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
 	const remove = useMutation({
 		mutationFn: (id: number) => deleteTodo({ data: { id } }),
-		onSuccess: (_data, id) => {
-			queryClient.setQueryData<Todo[]>(todosQueryKey, (current = []) =>
-				current.filter((todo) => todo.id !== id),
-			);
+		onSuccess: () => {
+			refetch();
 		},
 	});
 

@@ -12,6 +12,7 @@ import type { Todo } from "#/server/schema/todo";
 import {
 	createTodo,
 	deleteTodo,
+	getTodos,
 	setTodoCompleted,
 } from "#/server/serverFn/todo";
 import { Page } from "./Page";
@@ -52,7 +53,7 @@ function renderPage(initialTodos: Todo[]) {
 
 	render(
 		<QueryClientProvider client={queryClient}>
-			<Page />
+			<Page initialTodos={initialTodos} />
 		</QueryClientProvider>,
 	);
 
@@ -88,6 +89,7 @@ describe("Page", () => {
 			createdAt: null,
 		};
 		vi.mocked(createTodo).mockResolvedValue(created);
+		vi.mocked(getTodos).mockResolvedValue([created]);
 		const queryClient = renderPage([]);
 
 		const input = screen.getByPlaceholderText("What needs to be done?");
@@ -117,6 +119,10 @@ describe("Page", () => {
 
 	it("toggles a todo and updates the cache", async () => {
 		vi.mocked(setTodoCompleted).mockResolvedValue(undefined);
+		vi.mocked(getTodos).mockResolvedValue([
+			{ ...todos[0], completed: true },
+			todos[1],
+		]);
 		const queryClient = renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("checkbox")[0]);
@@ -133,6 +139,7 @@ describe("Page", () => {
 
 	it("deletes a todo and updates the cache", async () => {
 		vi.mocked(deleteTodo).mockResolvedValue(undefined);
+		vi.mocked(getTodos).mockResolvedValue([todos[1]]);
 		const queryClient = renderPage(todos);
 
 		fireEvent.click(screen.getAllByRole("button", { name: "Delete" })[0]);

@@ -3,10 +3,12 @@ import { Page } from "#/client/component/routes/counter/Page.tsx";
 import { getCounter } from "#/server/serverFn/counter";
 
 export const Route = createFileRoute("/counter")({
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData({
-			queryKey: ["counter"],
-			queryFn: () => getCounter(),
-		}),
-	component: Page,
+	loader: () => getCounter(),
+	component: CounterPage,
 });
+
+function CounterPage() {
+	const initialCounter = Route.useLoaderData();
+
+	return <Page initialCounter={initialCounter} />;
+}

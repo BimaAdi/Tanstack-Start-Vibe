@@ -8,7 +8,11 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { decrementCounter, incrementCounter } from "#/server/serverFn/counter";
+import {
+	decrementCounter,
+	getCounter,
+	incrementCounter,
+} from "#/server/serverFn/counter";
 import { Page } from "./Page";
 
 const counterQueryKey = ["counter"] as const;
@@ -31,7 +35,7 @@ function renderPage(count: number) {
 
 	render(
 		<QueryClientProvider client={queryClient}>
-			<Page />
+			<Page initialCounter={{ count }} />
 		</QueryClientProvider>,
 	);
 
@@ -59,6 +63,7 @@ describe("Page", () => {
 
 	it("increments the counter and updates the query cache", async () => {
 		vi.mocked(incrementCounter).mockResolvedValue({ count: 8 });
+		vi.mocked(getCounter).mockResolvedValue({ count: 8 });
 		const queryClient = renderPage(7);
 
 		fireEvent.click(screen.getByRole("button", { name: "Increment" }));
@@ -70,6 +75,7 @@ describe("Page", () => {
 
 	it("decrements the counter and updates the query cache", async () => {
 		vi.mocked(decrementCounter).mockResolvedValue({ count: 6 });
+		vi.mocked(getCounter).mockResolvedValue({ count: 6 });
 		const queryClient = renderPage(7);
 
 		fireEvent.click(screen.getByRole("button", { name: "Decrement" }));

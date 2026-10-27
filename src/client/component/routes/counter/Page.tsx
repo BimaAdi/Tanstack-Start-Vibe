@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { counterSchema } from "#/server/schema/counter";
 import {
 	decrementCounter,
 	getCounter,
@@ -7,28 +8,30 @@ import {
 
 const counterQueryKey = ["counter"] as const;
 
+type Counter = import("zod").infer<typeof counterSchema>;
+
 function errorMessage(error: unknown) {
 	return error instanceof Error ? error.message : "Something went wrong";
 }
 
-export function Page() {
-	const queryClient = useQueryClient();
-	const { data: counter } = useQuery({
+export function Page({ initialCounter }: { initialCounter: Counter }) {
+	const { data: counter, refetch } = useQuery({
 		queryKey: counterQueryKey,
 		queryFn: () => getCounter(),
+		initialData: initialCounter,
 	});
 
 	const increment = useMutation({
 		mutationFn: () => incrementCounter(),
-		onSuccess: (data) => {
-			queryClient.setQueryData(counterQueryKey, data);
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
 	const decrement = useMutation({
 		mutationFn: () => decrementCounter(),
-		onSuccess: (data) => {
-			queryClient.setQueryData(counterQueryKey, data);
+		onSuccess: () => {
+			refetch();
 		},
 	});
 
@@ -51,7 +54,7 @@ export function Page() {
 						decrement.reset();
 						increment.mutate();
 					}}
-					className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+					className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
 				>
 					Increment
 				</button>
@@ -62,7 +65,7 @@ export function Page() {
 						increment.reset();
 						decrement.mutate();
 					}}
-					className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 disabled:opacity-50"
+					className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
 				>
 					Decrement
 				</button>
