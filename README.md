@@ -1,4 +1,11 @@
-Welcome to your new TanStack Start app!
+# TanStack Start Vibe
+I try full vibe coding as Software Engineer.
+
+# for Vibe Coders
+- point your code agent to this folder
+- prompt what you want to build
+- copy or mention this README.md and skills/fullstack-developer.md
+- let the AI rolling
 
 # Getting Started
 
@@ -30,6 +37,16 @@ This project uses [Biome](https://biomejs.dev/) for linting and formatting. The 
 pnpm lint
 pnpm format
 pnpm check
+```
+
+## Typechecking
+```bash
+pnpm typecheck
+```
+
+## Test
+```bash
+pnpm test
 ```
 
 ## Project Structure
