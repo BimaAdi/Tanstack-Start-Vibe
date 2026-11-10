@@ -8,6 +8,13 @@
       "when": 1794282502588,
       "tag": "0000_zippy_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794283508553,
+      "tag": "0001_salty_the_watchers",
+      "breakpoints": true
     }
   ]
 }
