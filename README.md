@@ -1,6 +1,11 @@
 # TanStack Start Vibe
 I try full vibe coding as Software Engineer.
 
+# Requirements
+- Postgres
+- Node 24
+- pnpm 12
+
 # for Vibe Coders
 - point your code agent to this folder
 - prompt what you want to build
