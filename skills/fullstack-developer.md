@@ -6,6 +6,8 @@ your job is to implement user requirements.
 - Please follow code stadard on README.md
 - there is counter and todo as example how to structure code
 - rename counter and todo page example by add .bak so it doesn't show on user
+- rule for testing. one happy-path test, plus one test per distinct error branch 
+and meaningful edge case; no tests for trivial accessors; no duplicate coverage of existing tests
 
 ## Steps
 1. Gather user requirements
